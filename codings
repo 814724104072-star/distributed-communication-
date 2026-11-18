@@ -1,0 +1,409 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Distributed Communication Network</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #10131b;
+    color: white;
+}
+
+header {
+    background: #202944;
+    padding: 25px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0 0 10px;
+}
+
+header p {
+    color: #cbd3e2;
+}
+
+main {
+    width: 90%;
+    max-width: 1000px;
+    margin: 25px auto;
+}
+
+.panel {
+    background: #191f2d;
+    border: 1px solid #30394d;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    margin-top: 0;
+    font-size: 20px;
+}
+
+.processes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.process {
+    background: #26334b;
+    padding: 18px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.process h3 {
+    color: #9fc5ff;
+}
+
+.count {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.inbox {
+    margin-top: 10px;
+    padding: 10px;
+    background: #111724;
+    border-radius: 7px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+
+label {
+    display: block;
+    margin: 12px 0 6px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 7px;
+    border: 1px solid #46516a;
+    background: #111724;
+    color: white;
+}
+
+button {
+    padding: 11px 15px;
+    margin: 8px 5px 0 0;
+    border: none;
+    border-radius: 7px;
+    background: #3978dc;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.green {
+    background: #16865f;
+}
+
+.red {
+    background: #a84250;
+}
+
+.gray {
+    background: #39445a;
+}
+
+.log {
+    background: #0c111b;
+    border: 1px solid #30394d;
+    border-radius: 8px;
+    padding: 12px;
+    height: 220px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+@media(max-width: 650px) {
+    .processes {
+        grid-template-columns: 1fr;
+    }
+
+    main {
+        width: 94%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Distributed Communication Network Model</h1>
+    <p>Communication Primitives and Message Passing Simulation</p>
+</header>
+
+<main>
+
+<section class="panel">
+    <h2>Distributed Processes</h2>
+
+    <div class="processes">
+
+        <div class="process">
+            <h3>Process P1</h3>
+            <div class="count" id="count-P1">0</div>
+            <p>Messages in Inbox</p>
+            <div class="inbox" id="preview-P1">Inbox is empty</div>
+        </div>
+
+        <div class="process">
+            <h3>Process P2</h3>
+            <div class="count" id="count-P2">0</div>
+            <p>Messages in Inbox</p>
+            <div class="inbox" id="preview-P2">Inbox is empty</div>
+        </div>
+
+        <div class="process">
+            <h3>Process P3</h3>
+            <div class="count" id="count-P3">0</div>
+            <p>Messages in Inbox</p>
+            <div class="inbox" id="preview-P3">Inbox is empty</div>
+        </div>
+
+    </div>
+</section>
+
+<section class="panel">
+    <h2>Send a Message</h2>
+
+    <label>Sender Process</label>
+    <select id="sender">
+        <option>P1</option>
+        <option>P2</option>
+        <option>P3</option>
+    </select>
+
+    <label>Receiver Process</label>
+    <select id="receiver">
+        <option>P2</option>
+        <option>P1</option>
+        <option>P3</option>
+    </select>
+
+    <label>Enter Message</label>
+    <input type="text" id="message"
+           placeholder="Enter your message">
+
+    <label>Communication Type</label>
+    <select id="mode">
+        <option value="point">Point-to-Point</option>
+        <option value="sync">Synchronous</option>
+        <option value="async">Asynchronous</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="sendMessage()">Send Message</button>
+
+    <button class="green" onclick="broadcastMessage()">
+        Broadcast Message
+    </button>
+
+    <button class="gray" onclick="receiveMessages()">
+        Receive Messages
+    </button>
+
+    <button class="gray" onclick="showStatus()">
+        Show Status
+    </button>
+
+    <button class="red" onclick="clearLog()">
+        Clear Log
+    </button>
+
+</section>
+
+<section class="panel">
+    <h2>Communication Activity Log</h2>
+    <div class="log" id="log">
+        Network initialized successfully.
+        Processes P1, P2 and P3 are ready.
+    </div>
+</section>
+
+</main>
+
+<script>
+
+const processes = {
+    P1: [],
+    P2: [],
+    P3: []
+};
+
+let sequenceNumber = 1;
+
+function addLog(message) {
+    const log = document.getElementById("log");
+
+    const entry = document.createElement("p");
+    entry.textContent =
+        new Date().toLocaleTimeString() + " - " + message;
+
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+}
+
+function updateStatus() {
+
+    Object.keys(processes).forEach(name => {
+
+        const inbox = processes[name];
+
+        document.getElementById("count-" + name)
+            .textContent = inbox.length;
+
+        document.getElementById("preview-" + name)
+            .textContent = inbox.length
+            ? inbox.map(m =>
+                "#" + m.id + " from " + m.sender +
+                ": " + m.text
+            ).join(" | ")
+            : "Inbox is empty";
+
+    });
+}
+
+function sendMessage() {
+
+    const sender = document.getElementById("sender").value;
+    const receiver = document.getElementById("receiver").value;
+    const message = document.getElementById("message").value.trim();
+    const mode = document.getElementById("mode").value;
+
+    if (message === "") {
+        alert("Please enter a message");
+        return;
+    }
+
+    if (sender === receiver) {
+        alert("Sender and receiver must be different");
+        return;
+    }
+
+    const msg = {
+        id: sequenceNumber++,
+        sender: sender,
+        text: message,
+        mode: mode
+    };
+
+    processes[receiver].push(msg);
+
+    if (mode === "sync") {
+        addLog(sender + " sent message to " + receiver);
+        addLog("Acknowledgement received from " + receiver +
+               " (simulated)");
+    }
+    else if (mode === "async") {
+        addLog("Asynchronous message sent from " +
+               sender + " to " + receiver);
+    }
+    else {
+        addLog("Point-to-point message sent from " +
+               sender + " to " + receiver);
+    }
+
+    updateStatus();
+
+    document.getElementById("message").value = "";
+}
+
+function broadcastMessage() {
+
+    const sender = document.getElementById("sender").value;
+    const message = document.getElementById("message").value.trim();
+
+    if (message === "") {
+        alert("Please enter a message");
+        return;
+    }
+
+    Object.keys(processes).forEach(receiver => {
+
+        if (receiver !== sender) {
+
+            processes[receiver].push({
+                id: sequenceNumber++,
+                sender: sender,
+                text: message,
+                mode: "broadcast"
+            });
+
+            addLog("Broadcast message sent from " +
+                   sender + " to " + receiver);
+        }
+
+    });
+
+    updateStatus();
+
+    document.getElementById("message").value = "";
+}
+
+function receiveMessages() {
+
+    const receiver = document.getElementById("receiver").value;
+    const inbox = processes[receiver];
+
+    if (inbox.length === 0) {
+        addLog(receiver + " has no messages");
+        return;
+    }
+
+    while (inbox.length > 0) {
+
+        const msg = inbox.shift();
+
+        addLog(receiver + " received message #" +
+               msg.id + " from " + msg.sender +
+               ": " + msg.text);
+    }
+
+    updateStatus();
+}
+
+function showStatus() {
+
+    Object.keys(processes).forEach(name => {
+
+        addLog(name + " has " +
+               processes[name].length +
+               " message(s) in inbox");
+
+    });
+}
+
+function clearLog() {
+    document.getElementById("log").innerHTML = "";
+    addLog("Activity log cleared");
+}
+
+updateStatus();
+
+</script>
+
+</body>
+</html>
